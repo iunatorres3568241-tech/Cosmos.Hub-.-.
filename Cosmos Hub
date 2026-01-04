@@ -1,0 +1,272 @@
+--==================================================
+-- COSMOS HUB | FINAL LAUNCH BUILD
+-- Versão: 4.2 FINAL
+-- Assinatura: Feito por Hanna
+--==================================================
+
+-- PROTEÇÃO DUPLA
+if _G.CosmosHubLoaded then return end
+_G.CosmosHubLoaded = true
+
+-- SERVIÇOS
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local StarterGui = game:GetService("StarterGui")
+local SoundService = game:GetService("SoundService")
+local VirtualUser = game:GetService("VirtualUser")
+local CoreGui = game:GetService("CoreGui")
+local Debris = game:GetService("Debris")
+
+local LP = Players.LocalPlayer
+
+-- CONFIG
+local CONFIG = {
+    Name = "Cosmos Hub",
+    Version = "4.2",
+    Signature = "Feito por Hanna",
+    Admins = {
+        [12345678] = true -- SEU USERID
+    }
+}
+
+-- UTIL
+local function Notify(t,m)
+    pcall(function()
+        StarterGui:SetCore("SendNotification",{
+            Title=t, Text=m, Duration=4
+        })
+    end)
+end
+
+local function IsAdmin()
+    return CONFIG.Admins[LP.UserId]
+end
+
+-- ESTADO GLOBAL
+_G.Cosmos = {
+    AntiAFK = true,
+    Noclip = false,
+    AntiSit = true,
+    AntiHook = true,
+    Music = nil
+}
+
+--==============================
+-- ANTI-AFK
+--==============================
+LP.Idled:Connect(function()
+    if _G.Cosmos.AntiAFK then
+        VirtualUser:Button2Down(Vector2.new(),workspace.CurrentCamera.CFrame)
+        task.wait(.3)
+        VirtualUser:Button2Up(Vector2.new(),workspace.CurrentCamera.CFrame)
+    end
+end)
+
+--==============================
+-- NOCLIP / ANTI-COLISÃO
+--==============================
+RunService.Stepped:Connect(function()
+    if not _G.Cosmos.Noclip then return end
+    local c = LP.Character
+    if c then
+        for _,v in ipairs(c:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = false
+            end
+        end
+    end
+end)
+
+--==============================
+-- ANTI-SIT INTELIGENTE
+--==============================
+RunService.Heartbeat:Connect(function()
+    if not _G.Cosmos.AntiSit then return end
+    local c = LP.Character
+    if not c then return end
+
+    local hum = c:FindFirstChildOfClass("Humanoid")
+    if hum and hum.Sit then
+        hum.Sit = false
+        hum.Jump = true
+    end
+end)
+
+--==============================
+-- ANTI-HOOK
+--==============================
+RunService.Stepped:Connect(function()
+    if not _G.Cosmos.AntiHook then return end
+    local c = LP.Character
+    if not c then return end
+    for _,v in ipairs(c:GetDescendants()) do
+        if v:IsA("Weld") or v:IsA("Motor6D") then
+            if v.Part1 and v.Part1.Parent ~= c then
+                v:Destroy()
+            end
+        end
+    end
+end)
+
+--==============================
+-- ANTI-LAG (SAFE)
+--==============================
+task.spawn(function()
+    while task.wait(15) do
+        for _,v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("Explosion") or v:IsA("Smoke") or v:IsA("Fire") then
+                v:Destroy()
+            end
+        end
+    end
+end)
+
+--==============================
+-- MÚSICA
+--==============================
+local function PlayMusic(id)
+    if _G.Cosmos.Music then _G.Cosmos.Music:Destroy() end
+    local s = Instance.new("Sound",SoundService)
+    s.SoundId="rbxassetid://"..id
+    s.Looped=true
+    s.Volume=1
+    s:Play()
+    _G.Cosmos.Music=s
+end
+
+local function StopMusic()
+    if _G.Cosmos.Music then
+        _G.Cosmos.Music:Destroy()
+        _G.Cosmos.Music=nil
+    end
+end
+
+--==============================
+-- FLING (ADMIN)
+--==============================
+local function FlingAll()
+    if not IsAdmin() then return end
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p~=LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp=p.Character.HumanoidRootPart
+            local bv=Instance.new("BodyVelocity",hrp)
+            bv.MaxForce=Vector3.new(1e9,1e9,1e9)
+            bv.Velocity=Vector3.new(0,900,0)+(hrp.CFrame.LookVector*-600)
+            Debris:AddItem(bv,.4)
+        end
+    end
+end
+
+--==============================
+-- UI COM ABAS ANIMADAS
+--==============================
+local function CreateUI()
+    local gui=Instance.new("ScreenGui",CoreGui)
+    gui.Name="CosmosHubUI"
+
+    local main=Instance.new("Frame",gui)
+    main.Size=UDim2.new(0,260,0,0)
+    main.Position=UDim2.new(.05,0,.3,0)
+    main.BackgroundColor3=Color3.fromRGB(12,12,18)
+    main.ClipsDescendants=true
+    main.Active=true
+    main.Draggable=true
+    Instance.new("UICorner",main)
+
+    TweenService:Create(main,TweenInfo.new(.5,Enum.EasingStyle.Quart),
+        {Size=UDim2.new(0,260,0,360)}):Play()
+
+    local title=Instance.new("TextLabel",main)
+    title.Size=UDim2.new(1,0,0,40)
+    title.BackgroundColor3=Color3.fromRGB(0,120,255)
+    title.Text=CONFIG.Name.." v"..CONFIG.Version
+    title.TextColor3=Color3.new(1,1,1)
+    title.Font=Enum.Font.GothamBold
+    title.TextSize=14
+    Instance.new("UICorner",title)
+
+    local tabs=Instance.new("Frame",main)
+    tabs.Size=UDim2.new(1,0,0,30)
+    tabs.Position=UDim2.new(0,0,.12,0)
+    tabs.BackgroundTransparency=1
+
+    local pages=Instance.new("Frame",main)
+    pages.Size=UDim2.new(1,0,.75,0)
+    pages.Position=UDim2.new(0,0,.22,0)
+    pages.BackgroundTransparency=1
+
+    local function NewPage()
+        local f=Instance.new("Frame",pages)
+        f.Size=UDim2.new(1,0,1,0)
+        f.Visible=false
+        local l=Instance.new("UIListLayout",f)
+        l.Padding=UDim.new(0,8)
+        l.HorizontalAlignment=Center
+        return f
+    end
+
+    local pageMain=NewPage()
+    local pageMusic=NewPage()
+    pageMain.Visible=true
+
+    local function Switch(p)
+        for _,v in pairs(pages:GetChildren()) do
+            if v:IsA("Frame") then v.Visible=false end
+        end
+        p.Visible=true
+    end
+
+    local function Tab(txt,x,pg)
+        local b=Instance.new("TextButton",tabs)
+        b.Size=UDim2.new(.5,0,1,0)
+        b.Position=UDim2.new(x,0,0,0)
+        b.Text=txt
+        b.BackgroundColor3=Color3.fromRGB(20,20,30)
+        b.TextColor3=Color3.new(1,1,1)
+        b.Font=Enum.Font.GothamBold
+        b.TextSize=12
+        Instance.new("UICorner",b)
+        b.MouseButton1Click:Connect(function() Switch(pg) end)
+    end
+
+    Tab("MAIN",0,pageMain)
+    Tab("MUSIC",.5,pageMusic)
+
+    local function Btn(p,t,cb)
+        local b=Instance.new("TextButton",p)
+        b.Size=UDim2.new(.9,0,0,36)
+        b.Text=t
+        b.BackgroundColor3=Color3.fromRGB(25,25,35)
+        b.TextColor3=Color3.new(1,1,1)
+        b.Font=Enum.Font.GothamBold
+        b.TextSize=12
+        Instance.new("UICorner",b)
+        b.MouseButton1Click:Connect(function() cb(b) end)
+    end
+
+    Btn(pageMain,"ANTI-AFK",function() _G.Cosmos.AntiAFK=not _G.Cosmos.AntiAFK end)
+    Btn(pageMain,"NOCLIP",function() _G.Cosmos.Noclip=not _G.Cosmos.Noclip end)
+    Btn(pageMain,"ANTI-SIT",function() _G.Cosmos.AntiSit=not _G.Cosmos.AntiSit end)
+    Btn(pageMain,"ANTI-HOOK",function() _G.Cosmos.AntiHook=not _G.Cosmos.AntiHook end)
+
+    if IsAdmin() then
+        Btn(pageMain,"FLING ALL (ADM)",FlingAll)
+    end
+
+    Btn(pageMusic,"PLAY MUSIC",function() PlayMusic(1843529274) end)
+    Btn(pageMusic,"STOP MUSIC",StopMusic)
+
+    Btn(pageMain,"FECHAR HUB",function()
+        TweenService:Create(main,TweenInfo.new(.4),
+            {Size=UDim2.new(0,260,0,0)}):Play()
+        task.wait(.4)
+        gui:Destroy()
+        _G.CosmosHubLoaded=nil
+    end)
+end
+
+-- INIT
+CreateUI()
+Notify(CONFIG.Name,"Launch Build carregada com sucesso 💙")
+print("🚀 COSMOS HUB FINAL | "..CONFIG.Signature)
